@@ -1,0 +1,303 @@
+---
+title: "DS_Math_Week_5_Final_Daniel_Thonn"
+output: html_document
+course: DS-Math-Bridge CUNY MSDA program
+date: 8/9/15
+---
+
+## Assignment DS-Math Homework-5: Final Project
+
+Load the hflights package
+
+```{r}
+#install.packages("hflights")
+#install.packages("ggplot2")
+#install.packages("pastecs")
+#install.packages("chron")
+library(hflights)
+library(ggplot2)
+library(chron)
+
+```
+
+
+
+Explore the hflights package
+
+```{r, echo=TRUE}
+library(hflights)
+
+head(hflights)
+names(hflights)
+str(hflights)
+```
+
+Using the hflights package or another large (greater than 100,000 observations and 20 variables) dataset of your choosing, pick two quantitative variables (e.g., Arrival Delay and Departure Delay).  Define one of these variables as the random variable X and the other as the random variable Y.  One of these variables must be skewed to the right (positively)
+
+```{r, echo=TRUE}
+#ArrDelay and DepDelay are in units: minutes
+x <- hflights$ArrDelay
+y <- hflights$DepDelay
+x2 <-hflights$AirTime
+y2 <-hflights$Distance
+z2 <-hflights$ActualElapsedTime
+a2 <-hflights$DepDelay
+b2 <-hflights$Diverted
+c2 <-hflights$ArrTime
+#x
+#y
+
+summary(x)
+summary(y)
+
+```
+> summary(x)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+-70.000  -8.000   0.000   7.094  11.000 978.000    3622 
+
+
+> summary(y)
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+-33.000  -3.000   0.000   9.445   9.000 981.000    2905 
+
+Note: From above data both x = $ArrDelay and y = $DepDelay are skewed to the right with Mean > Median.
+
+
+1a). Probability:   Calculate as a minimum the below probabilities a through d.  Assume the small letter "x" is estimated as the 3d quartile of the X variable, and the small letter "y" is estimated as the 2d quartile of the Y variable.  Interpret the meaning of all probabilities.  In addition, make a table of counts as shown below.
+
+x= 3rd Qtrl X = 11.0
+
+y = 2nd Qrtl Y = 0
+
+```{r, echo=TRUE}
+
+#install.packages("data.table")
+library(data.table)
+
+#Build Matrix Table of counts
+
+# a11: x <= 3d ; y <=2d 
+a11 <- nrow(subset(hflights, x <= 11 & y <= 0))
+
+# a21: x> 3d ; y <=2d 
+a21 <- nrow(subset(hflights, x > 11 & y <= 0))
+
+# a12: x <= 3d ; y > 2d 
+a12 <- nrow(subset(hflights, x <= 11 & y > 0))
+
+# a22: x > 3d ; y > 2d 
+a22 <- nrow(subset(hflights, x > 11 & y > 0))
+
+total_r1 <- a11 + a12
+total_r2 <- a21 + a22
+total_c1 <- a11 + a21
+total_c2 <- a12 + a22
+total_all <- total_c1 + total_c2
+
+aa <- c('<=3d quartile', '>3d quartile','Total')
+bb <- c(a11,a12,total_r1)
+cc <- c(a21,a22,total_r2)
+dd <- c(total_c1,total_c2,total_all)
+CountTable <- data.frame('x=y'=aa,'LE2d quartile'=bb,'GT2d quartile'=cc,'Total'=dd)
+CountTable
+```
+
+CountTable
+            x.y         LE2d.quartile GT2d.quartile  Total
+1  <=3d quartile        108141        6159            114300
+2  >3d quartile         61026         48548           109574
+3         Total         169167         54707           223874
+
+```{r, echo=TRUE}
+#x: 3rd quartile
+#y: 2nd quartile
+
+
+#a: P(X>x | Y>y)                      
+#P(X|Y) <= P(Y|X) * P(X) / Sum (P(Y|X) * P(X))
+# P(X given Y)
+PXGY1 <- (48548/109574) * (109574/223874) / ((48548/109574)*109574/223874 ) * ((6159/114300)*(114300/223874))
+PXGY1
+#    Answer: > PXGY = [1] 0.02751101
+
+#b:  P(X>x, Y>y) 
+# P(X and Y) = P(X) + P(Y)
+PXAY <- (109574/223874) + (54707/223874)
+PXAY
+# Answer: PXAY =  0.7338101
+
+#c:  P(X<x | Y>y)                 
+#P(X|Y) <= P(Y|X) * P(X) / Sum (P(Y|X) * P(X))
+# P(X given Y)
+PXGY2 <- (6159/114300) * (114300/223874) / ((6159/114300)*114300/223874 ) * ((48548/109574)*(109574/223874))
+PXGY2
+#Answer=PXGY2 = 0.2168541
+
+```
+			
+			
+1b). Does splitting the data in this fashion make them independent? Let A be the new variable counting those observations above the 3d quartile for X, and let B be the new variable counting those observations for the 2d quartile for Y.    Does P(A|B)=P(A)P(B)? Check mathematically, and then evaluate by running a Chi Square test for association.   		
+			
+CountTable
+            x.y         LE2d.quartile GT2d.quartile  Total
+1  <=3d quartile        108141        6159            114300
+2  >3d quartile         61026         48548           109574
+3         Total         169167         54707           223874			
+
+```{r, echo=TRUE}
+#x: 3rd quartile
+#y: 2nd quartile
+#a: P(X>x | Y<=y)
+
+#Does P(A|B)=P(A)*P(B)?
+#Check P(A|B)
+#P(X|Y) <= P(Y|X) * P(X) / Sum (P(Y|X) * P(X))
+# PXGY = P(A|B) = PAGB1
+PAGB1 <- (61026/109574) * (109574/223874) / ((61026/109574)*109574/223874 ) * ((108141/114300)*(114300/223874))
+PAGB1
+#PAGB1 = PXGY = 0.483044
+
+#Check P(A) * P(B)
+PAGB2 = (109574/223874) * (54707/223874)
+PAGB2
+# PAGB2 = 	0.1196033
+# Conclusion: PAGB1 <> PAGB2, so events not independent
+
+
+#Chisquared test
+#hypothesis: x and y are independent
+chisq.test(x,y)
+
+#data:  x and y
+#X-squared = 24824000, df = 197270, p-value < 2.2e-16
+#Conclusion: p-value is less than .05 signicance level, hypothesis rejected, x and y not independent
+			
+```			
+			
+2). Descriptive and Inferential Statistics: Provide univariate descriptive statistics and appropriate plots.  Provide a scatterplot of the two variables.  Provide a 95% CI for the difference in the mean of the variables.  Derive a correlation matrix for two of the quantitative variables you selected.  Test the hypothesis that the correlation between these variables is 0 and provide a 99% confidence interval.  Discuss the meaning of your analysis.		
+			
+```{r, echo=TRUE}
+# Scatterplot of two variables
+
+plot(x, y, xlab="arrival delays", ylab="departure delays", main="arrival and departure Delays",frame.plot=FALSE)
+
+# 95% Confidence Intervel
+t.test(y,x)
+
+#data:  y and x
+#t = 26.436, df = 446450, p-value < 2.2e-16
+#alternative hypothesis: true difference in means is not equal to 0
+#95 percent confidence interval:
+# 2.176342 2.524892
+#sample estimates:
+#mean of x mean of y 
+# 9.444951  7.094334 
+
+# Correlation Test
+cor.test(y,x,conf.level=0.99)
+
+#	Pearson's product-moment correlation
+
+#data:  y and x
+#t = 1189.8, df = 223870, p-value < 2.2e-16
+#alternative hypothesis: true correlation is not equal to 0
+#99 percent confidence interval:
+# 0.9284710 0.9299578
+#sample estimates:
+#      cor 
+#0.9292181 
+
+```
+
+Conclusion:
+This indicatest that there is a 95% condidence intervel that the means of the variables will be between 2.176342 and2.524892.  And the correlation test indicates that the correlation is not equal to 0, therefore there a high liklihood of positive correlation.
+
+
+3). Linear Algebra and Correlation.  Invert your correlation matrix. (This is known as the precision matrix and contains variance inflation factors on the diagonal.) Multiply the correlation matrix by the precision matrix, and then multiply the precision matrix by the correlation matrix. As an advanced option, conduct principle components analysis and interpret.  Discuss.
+
+```{r, echo=TRUE}
+dat1 <- data.frame(x,y)  # x=$ArrDelay, y = $DepDelay 
+dat2 <- data.frame(y2,a2) # y2=$Distance, a2=$DepDelay
+dat3 <- data.frame(y2,b2)  # y2=$Distance, $Diverted
+#Found a correlation between y2(hflights$Distance) and b2(Diverted)
+
+matrix1 <- cor(dat1)
+matrix1
+#no valid correlation
+
+
+matrix3 <- cor(dat3)
+matrix3
+#found a valid correlation matrix with matrix3 - though correlation is small - so we will use matrix3
+
+pmatrix3 = solve(matrix3)
+pmatrix3
+
+#             y2           b2
+#y2  1.000057751 -0.007599626
+#b2 -0.007599626  1.000057751
+
+matrix3 %*% pmatrix3
+#returns identity matrix
+pmatrix3 %*% matrix3
+#returns identity matrix
+
+#Discussion: A correlation matrix was found between $Distance and $Diverted so the problem
+#could be complete. However the correlation is very small and less than .05.  Multiplying the 
+#correlation matrix times the precision matrix returned the identify matrix in both directions.
+
+```	 
+
+4). Calculus-Based Probability & Statistics.  Many times, it makes sense to fit a closed form distribution to data.  For your variable that is skewed to the right, shift it so that the minimum value is above zero.  Then load the MASS package and run fitdistr to fit an exponential probability density function.  
+Find the optimal value of ??? for this distribution, and then take 1000 samples from this exponential distribution using this value (e.g., rexp(1000, ???)).  Plot a histogram and compare it with a histogram of your original variable.   Using the exponential pdf, find the 5th and 95th percentiles using the cumulative distribution function (CDF).   Also generate a 95% confidence interval from the empirical data, assuming normality.  Finally, provide the empirical 5th percentile and 95th percentile of the data.  Discuss.
+
+
+```{r, echo=TRUE}
+#install.packages("MASS")
+library(MASS)
+x <- hflights$ArrDelay
+#shift x by 100 to get mean above zero
+xadd = na.omit(x) + 100
+#xadd
+summary(xadd)
+fitdistr(xadd,"exponential") #obtained lambda= 9.337562e-03
+#New exponential distribution using 
+d2 <- rexp(1000,9.337562e-03)
+
+summary(xadd)
+
+summary(d2)
+
+str(xadd)
+hist(xadd)
+hist(d2)
+
+# apply the CDF cumulative distribution function to new distribution d2
+p=ecdf(d2)
+
+q1=quantile(p,.95)
+q1
+#Answer: 95% = 304.8782
+
+q2 = quantile(p,.05)
+q2
+#Answer: 5% = 5.206419
+
+
+t.test(d2)
+
+#> t.test(d2)
+#One Sample t-test
+#data:  d2
+#t = 33.709, df = 999, p-value < 2.2e-16
+#alternative hypothesis: true mean is not equal to 0
+#95 percent confidence interval:
+# 99.14528 111.40231
+#sample estimates:
+#mean of x 
+# 105.2738 
+
+```	
+
+Discussion: the histogram of the original distribution xadd is similar shape to the exponention approximation d2.  The 95% value is 304.88, the 5% value is 5.21.  The 95% confidence interval test shows a mean between 99.15 and 111.40.
+
